@@ -8,25 +8,34 @@ api = Api(app)
 import numpy as np
 import json
 from agent import Agent
+from flask import jsonify
 
 
-state_size = 10
+state_size = 6
 action_size = 2
 parser = reqparse.RequestParser()
 #parser.add_argument('data1', type=list, location='json')
 parser.add_argument('state', action='append')
-parser.add_argument('action', action='append')
-parser.add_argument('reward', action='append')
+parser.add_argument('eps', type=int)
+parser.add_argument('action', type=int)
+parser.add_argument('reward', type=int)
 parser.add_argument('next_state', action='append')
 parser.add_argument('done', action='append')
+parser.add_argument('state_size', type=int)
+parser.add_argument('action_size', type=int)
+parser.add_argument('seed', type=int)
+parser.add_argument('network')
+parser.add_argument('load_network', type=int)
+
 
 response = {
-    'record': 'data recorded',
-    'predict': 'pretict action'
+    'action': 'data recorded',
+    'setup': 'pretict action',
+    'step': "step complete"
 }
 
 transformer = DataTransforms()
-eps=1
+#eps=1
 agent = Agent(state_size=state_size, action_size=action_size, seed=0, network="cnn")
 # Action
 #   receives an state array and returns a action
@@ -37,10 +46,11 @@ class Action(Resource):
     def post(self):
         args = parser.parse_args()
         state = args['state']
-        state = transformer.toarray([data])
+        eps = args['eps']
+        state = transformer.toarray([state])
         action = agent.act(state, eps)
-        print(data)
-        transformer.tocsv_single(data,'test_data.csv')
+        action = int(action)
+        transformer.tocsv_single(state,'test_data.csv')
         return action
 
 class Step(Resource):
@@ -58,7 +68,7 @@ class Step(Resource):
         agent.step(state, action, reward, next_state, done)
         print(data)
         transformer.tocsv_single(data,'test_data.csv')
-        return args['state']
+        return response['step']
 
 class Setup(Resource):
     def get(self):
@@ -66,11 +76,13 @@ class Setup(Resource):
 
     def post(self):
         args = parser.parse_args()
-        data = args['data']
-        data = transformer.toarray([data])
-        print(data)
-        transformer.tocsv_single(data,'test_data.csv')
-        return args['data']
+        state_size = args['state_size']
+        action_size = args['action_size']
+        seed = args['seed']
+        network = args['network']
+        load_network = args['load_network']
+        agent = Agent(state_size=state_size, action_size=action_size, seed=0, network="cnn")
+        return response['step']
 ##
 ## Actually setup the Api resource routing here
 ##
